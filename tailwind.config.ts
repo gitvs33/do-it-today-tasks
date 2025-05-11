@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,7 +62,12 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				taskPurple: '#9b87f5',
+				taskLightPurple: '#e5deff',
+				taskCompleted: '#4ade80',
+				taskImportant: '#3b82f6',
+				taskBackground: '#f9f9fb',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -84,11 +90,17 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'task-complete': {
+					'0%': { transform: 'scale(1)' },
+					'50%': { transform: 'scale(1.1)' },
+					'100%': { transform: 'scale(1)' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'task-complete': 'task-complete 0.3s ease-in-out'
 			}
 		}
 	},
