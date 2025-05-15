@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TaskCategory, TaskRepetition } from "@/types";
 import { useTasks } from "@/contexts/TaskContext";
@@ -25,12 +25,15 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<TaskCategory>("personal");
+  const [customCategory, setCustomCategory] = useState("");
+  const [showCustomCategory, setShowCustomCategory] = useState(false);
   const [isImportant, setIsImportant] = useState(false);
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [repetition, setRepetition] = useState<TaskRepetition>("none");
   const [repeatInterval, setRepeatInterval] = useState<number>(1);
   
-  const { addTask } = useTasks();
+  const { addTask, getCustomCategories } = useTasks();
+  const customCategories = getCustomCategories();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,10 +42,15 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
       return;
     }
     
+    // Use custom category if selected
+    const finalCategory = showCustomCategory && customCategory.trim() 
+      ? customCategory.trim() 
+      : category;
+    
     addTask({
       title,
       description: description || undefined,
-      category,
+      category: finalCategory,
       completed: false,
       important: isImportant,
       dueDate,
@@ -65,10 +73,22 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
     setTitle("");
     setDescription("");
     setCategory("personal");
+    setCustomCategory("");
+    setShowCustomCategory(false);
     setIsImportant(false);
     setDueDate(undefined);
     setRepetition("none");
     setRepeatInterval(1);
+  };
+
+  const handleCategoryChange = (value: string) => {
+    if (value === 'custom') {
+      setShowCustomCategory(true);
+      setCategory('other'); // Set a default
+    } else {
+      setShowCustomCategory(false);
+      setCategory(value as TaskCategory);
+    }
   };
 
   return (
@@ -106,8 +126,8 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
             <div className="space-y-2">
               <Label>Category</Label>
               <RadioGroup 
-                value={category} 
-                onValueChange={(value) => setCategory(value as TaskCategory)}
+                value={showCustomCategory ? "custom" : category} 
+                onValueChange={handleCategoryChange}
                 className="flex flex-wrap gap-2"
               >
                 <div className="flex items-center space-x-2">
@@ -130,7 +150,41 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
                   <RadioGroupItem value="other" id="other" />
                   <Label htmlFor="other" className="cursor-pointer">Other</Label>
                 </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="custom" id="custom" />
+                  <Label htmlFor="custom" className="cursor-pointer">Custom</Label>
+                </div>
               </RadioGroup>
+              
+              {showCustomCategory && (
+                <div className="mt-2">
+                  {customCategories.length > 0 && (
+                    <div className="mb-2">
+                      <Label htmlFor="existingCustom">Select existing or create new:</Label>
+                      <Select value={customCategory} onValueChange={setCustomCategory}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Choose or type new" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {customCategories.map(cat => (
+                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  <Label htmlFor="customCategory">
+                    {customCategories.length > 0 ? "Or create new category:" : "Create custom category:"}
+                  </Label>
+                  <Input
+                    id="customCategory"
+                    placeholder="Enter custom category"
+                    value={customCategory}
+                    onChange={(e) => setCustomCategory(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+              )}
             </div>
             
             <div className="flex flex-col space-y-2">

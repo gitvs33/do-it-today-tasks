@@ -1,5 +1,5 @@
 
-export type TaskCategory = 'personal' | 'work' | 'shopping' | 'health' | 'other';
+export type TaskCategory = 'personal' | 'work' | 'shopping' | 'health' | 'other' | string;
 
 export type TaskRepetition = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom';
 

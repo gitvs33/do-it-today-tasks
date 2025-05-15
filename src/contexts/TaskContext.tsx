@@ -12,6 +12,7 @@ interface TaskContextType {
   toggleComplete: (id: string) => void;
   toggleImportant: (id: string) => void;
   getFilteredTasks: (category?: TaskCategory | 'all', showCompleted?: boolean) => Task[];
+  getCustomCategories: () => string[];
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
@@ -201,6 +202,19 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
+  // Get all custom categories from tasks
+  const getCustomCategories = (): string[] => {
+    const defaultCategories = ['personal', 'work', 'shopping', 'health', 'other'];
+    const allCategories = tasks.map(task => task.category);
+    
+    // Filter out default categories and get unique values
+    const customCategories = [...new Set(
+      allCategories.filter(cat => !defaultCategories.includes(cat as string))
+    )];
+    
+    return customCategories as string[];
+  };
+
   return (
     <TaskContext.Provider value={{ 
       tasks, 
@@ -208,7 +222,8 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       deleteTask, 
       toggleComplete, 
       toggleImportant,
-      getFilteredTasks
+      getFilteredTasks,
+      getCustomCategories
     }}>
       {children}
     </TaskContext.Provider>
