@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
+import { AlertCircle } from "lucide-react";
 
 const Signup = () => {
   const [name, setName] = useState("");
@@ -13,6 +14,7 @@ const Signup = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [apiError, setApiError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const { signup } = useAuth();
@@ -39,12 +41,15 @@ const Signup = () => {
     
     if (!validate()) return;
     
+    setApiError(null);
     setIsSubmitting(true);
+    
     try {
       await signup(name, email, password);
       navigate("/tasks");
     } catch (error) {
       console.error("Signup failed:", error);
+      setApiError((error as Error).message || "An unexpected error occurred");
     } finally {
       setIsSubmitting(false);
     }
@@ -68,6 +73,13 @@ const Signup = () => {
           
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
+              {apiError && (
+                <div className="bg-red-50 p-3 rounded-md flex items-start gap-3 text-red-700 border border-red-200">
+                  <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm">{apiError}</p>
+                </div>
+              )}
+              
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
                 <Input
