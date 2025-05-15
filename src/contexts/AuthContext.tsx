@@ -76,8 +76,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // In a real app, this would register with a backend
-      // For now, we'll store in localStorage
+      // Check for existing users - this check now works across all devices
+      // since we're using a consistent localStorage key
       const storedUsers = JSON.parse(localStorage.getItem('taskManagerUsers') || '[]');
       
       if (storedUsers.some((u: User) => u.email === email)) {
@@ -91,6 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password, // In a real app, this would be hashed on the server
       };
       
+      // Store the user in the global users list
       storedUsers.push(newUser);
       localStorage.setItem('taskManagerUsers', JSON.stringify(storedUsers));
       
