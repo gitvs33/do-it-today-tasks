@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Check, Plus, Star, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,7 +15,6 @@ const Tasks = () => {
   const [activeTab, setActiveTab] = useState<TaskCategory | "all">("all");
   const [showCompleted, setShowCompleted] = useState(true);
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
-  const [showMoreCategories, setShowMoreCategories] = useState(false);
   
   const { getFilteredTasks, getCustomCategories, deleteCategory } = useTasks();
   const { user } = useAuth();
@@ -139,7 +137,7 @@ const Tasks = () => {
                   
                   {/* More categories dropdown if we have more than 2 custom categories */}
                   {customCategories.length > 2 && (
-                    <DropdownMenu open={showMoreCategories} onOpenChange={setShowMoreCategories}>
+                    <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className="px-2">
                           More...
@@ -148,14 +146,14 @@ const Tasks = () => {
                       <DropdownMenuContent align="start" className="w-48">
                         {customCategories.slice(2).map(cat => (
                           <DropdownMenuItem 
-                            key={cat} 
+                            key={cat}
+                            className="flex items-center justify-between group/item"
                             onSelect={(e) => {
-                              // Don't trigger if delete button was clicked
-                              if (!(e.target as HTMLElement).closest('button.delete-category')) {
-                                handleTabChange(cat);
-                              }
+                              // Prevent the default onSelect behavior
+                              e.preventDefault();
+                              // Set the active tab to this category
+                              handleTabChange(cat);
                             }}
-                            className="flex justify-between items-center"
                           >
                             <span>{cat}</span>
                             <button
@@ -163,9 +161,9 @@ const Tasks = () => {
                                 e.stopPropagation();
                                 handleDeleteCategory(cat);
                               }}
-                              className="delete-category text-gray-400 hover:text-red-500"
+                              className="opacity-0 group-hover/item:opacity-100 transition-opacity"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4 text-gray-400 hover:text-red-500" />
                             </button>
                           </DropdownMenuItem>
                         ))}
