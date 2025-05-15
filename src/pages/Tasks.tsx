@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Check, Plus, Star } from "lucide-react";
+import { Check, Plus, Star, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,7 +9,8 @@ import { useTasks } from "@/contexts/TaskContext";
 import { TaskItem } from "@/components/TaskItem";
 import { AddTaskDialog } from "@/components/AddTaskDialog";
 import { useAuth } from "@/contexts/AuthContext";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { toast } from "@/hooks/use-toast";
 
 const Tasks = () => {
   const [activeTab, setActiveTab] = useState<TaskCategory | "all">("all");
@@ -17,7 +18,7 @@ const Tasks = () => {
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [showMoreCategories, setShowMoreCategories] = useState(false);
   
-  const { getFilteredTasks, getCustomCategories } = useTasks();
+  const { getFilteredTasks, getCustomCategories, deleteCategory } = useTasks();
   const { user } = useAuth();
   
   const customCategories = getCustomCategories();
@@ -38,6 +39,17 @@ const Tasks = () => {
 
   const handleTabChange = (value: string) => {
     setActiveTab(value as TaskCategory | "all");
+  };
+
+  const handleDeleteCategory = (category: string) => {
+    // Confirm before deleting
+    if (window.confirm(`Are you sure you want to delete the "${category}" category? All tasks in this category will be moved to "Other"`)) {
+      deleteCategory(category);
+      // If we were on that tab, switch to "all"
+      if (activeTab === category) {
+        setActiveTab("all");
+      }
+    }
   };
 
   const renderTaskList = (category: string) => {
@@ -104,7 +116,25 @@ const Tasks = () => {
                   
                   {/* Show some custom categories in the main tabs */}
                   {customCategories.slice(0, 2).map(cat => (
-                    <TabsTrigger key={cat} value={cat}>{cat}</TabsTrigger>
+                    <TabsTrigger key={cat} value={cat} className="relative group">
+                      {cat}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button 
+                            onClick={(e) => e.stopPropagation()} 
+                            className="absolute right-1 opacity-0 group-hover:opacity-100 hover:bg-gray-100 p-1 rounded-full"
+                          >
+                            <Edit className="h-3 w-3" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem onClick={() => handleDeleteCategory(cat)}>
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete category
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TabsTrigger>
                   ))}
                   
                   {/* More categories dropdown if we have more than 2 custom categories */}
@@ -115,10 +145,28 @@ const Tasks = () => {
                           More...
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-40">
+                      <DropdownMenuContent align="start" className="w-48">
                         {customCategories.slice(2).map(cat => (
-                          <DropdownMenuItem key={cat} onSelect={() => handleTabChange(cat)}>
-                            {cat}
+                          <DropdownMenuItem 
+                            key={cat} 
+                            onSelect={(e) => {
+                              // Don't trigger if delete button was clicked
+                              if (!(e.target as HTMLElement).closest('button.delete-category')) {
+                                handleTabChange(cat);
+                              }
+                            }}
+                            className="flex justify-between items-center"
+                          >
+                            <span>{cat}</span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteCategory(cat);
+                              }}
+                              className="delete-category text-gray-400 hover:text-red-500"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
                           </DropdownMenuItem>
                         ))}
                       </DropdownMenuContent>

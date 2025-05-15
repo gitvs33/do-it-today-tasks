@@ -1,6 +1,5 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Task, TaskCategory, TaskRepetition } from '@/types';
 import { useAuth } from './AuthContext';
 import { addDays, addMonths, addWeeks, addYears, isAfter } from 'date-fns';
@@ -13,6 +12,7 @@ interface TaskContextType {
   toggleImportant: (id: string) => void;
   getFilteredTasks: (category?: TaskCategory | 'all', showCompleted?: boolean) => Task[];
   getCustomCategories: () => string[];
+  deleteCategory: (categoryToDelete: string) => void;
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
@@ -215,6 +215,32 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return customCategories as string[];
   };
 
+  // Delete a custom category and reassign its tasks to "other"
+  const deleteCategory = (categoryToDelete: string) => {
+    // Don't allow deleting default categories
+    const defaultCategories = ['personal', 'work', 'shopping', 'health', 'other'];
+    if (defaultCategories.includes(categoryToDelete)) {
+      toast({
+        title: "Cannot delete default category",
+        description: "Default categories cannot be deleted.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Move tasks from this category to "other" and update state
+    setTasks(tasks.map(task => 
+      task.category === categoryToDelete 
+        ? { ...task, category: 'other' } 
+        : task
+    ));
+
+    toast({
+      title: "Category deleted",
+      description: `"${categoryToDelete}" category has been deleted and its tasks moved to "Other".`,
+    });
+  };
+
   return (
     <TaskContext.Provider value={{ 
       tasks, 
@@ -223,7 +249,8 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toggleComplete, 
       toggleImportant,
       getFilteredTasks,
-      getCustomCategories
+      getCustomCategories,
+      deleteCategory
     }}>
       {children}
     </TaskContext.Provider>
