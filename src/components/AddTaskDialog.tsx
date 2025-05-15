@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -42,10 +41,22 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
       return;
     }
     
-    // Use custom category if selected
-    const finalCategory = showCustomCategory && customCategory.trim() 
-      ? customCategory.trim() 
-      : category;
+    // Handle custom category
+    let finalCategory: TaskCategory;
+    if (showCustomCategory) {
+      // If a custom category is selected from dropdown, use it
+      if (customCategories.includes(customCategory)) {
+        finalCategory = customCategory;
+      } else if (customCategory.trim()) {
+        // If it's a new custom category, use the trimmed value
+        finalCategory = customCategory.trim();
+      } else {
+        // Fallback to 'other' if no valid custom category
+        finalCategory = 'other';
+      }
+    } else {
+      finalCategory = category;
+    }
     
     addTask({
       title,
@@ -157,13 +168,16 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
               </RadioGroup>
               
               {showCustomCategory && (
-                <div className="mt-2">
+                <div className="mt-2 space-y-4">
                   {customCategories.length > 0 && (
-                    <div className="mb-2">
-                      <Label htmlFor="existingCustom">Select existing or create new:</Label>
-                      <Select value={customCategory} onValueChange={setCustomCategory}>
+                    <div>
+                      <Label>Select existing category or create new:</Label>
+                      <Select 
+                        value={customCategory} 
+                        onValueChange={setCustomCategory}
+                      >
                         <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Choose or type new" />
+                          <SelectValue placeholder="Choose existing category" />
                         </SelectTrigger>
                         <SelectContent>
                           {customCategories.map(cat => (
@@ -173,16 +187,19 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
                       </Select>
                     </div>
                   )}
-                  <Label htmlFor="customCategory">
-                    {customCategories.length > 0 ? "Or create new category:" : "Create custom category:"}
-                  </Label>
-                  <Input
-                    id="customCategory"
-                    placeholder="Enter custom category"
-                    value={customCategory}
-                    onChange={(e) => setCustomCategory(e.target.value)}
-                    className="mt-1"
-                  />
+                  
+                  <div>
+                    <Label htmlFor="newCategory">
+                      {customCategories.length > 0 ? "Or create new category:" : "Create new category:"}
+                    </Label>
+                    <Input
+                      id="newCategory"
+                      placeholder="Enter new category name"
+                      value={customCategory}
+                      onChange={(e) => setCustomCategory(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
                 </div>
               )}
             </div>
