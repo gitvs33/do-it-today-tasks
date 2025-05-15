@@ -1,6 +1,8 @@
 
 export type TaskCategory = 'personal' | 'work' | 'shopping' | 'health' | 'other';
 
+export type TaskRepetition = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom';
+
 export interface Task {
   id: string;
   title: string;
@@ -10,6 +12,9 @@ export interface Task {
   category: TaskCategory;
   createdAt: Date;
   dueDate?: Date;
+  repetition: TaskRepetition;
+  repeatInterval?: number; // For custom repetition (days)
+  lastCompleted?: Date;
 }
 
 export interface User {

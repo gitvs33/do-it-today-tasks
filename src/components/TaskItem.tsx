@@ -1,9 +1,10 @@
 
 import { useState } from "react";
-import { Check, Star, Trash } from "lucide-react";
+import { Check, Clock, RepeatIcon, Star, Trash } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Task } from "@/types";
 import { useTasks } from "@/contexts/TaskContext";
+import { format } from "date-fns";
 
 interface TaskItemProps {
   task: Task;
@@ -26,6 +27,27 @@ export function TaskItem({ task }: TaskItemProps) {
     e.stopPropagation();
     deleteTask(task.id);
   };
+
+  const getRepetitionLabel = (task: Task) => {
+    switch (task.repetition) {
+      case 'none':
+        return null;
+      case 'daily':
+        return 'Daily';
+      case 'weekly':
+        return 'Weekly';
+      case 'monthly':
+        return 'Monthly';
+      case 'yearly':
+        return 'Yearly';
+      case 'custom':
+        return `Every ${task.repeatInterval} day${task.repeatInterval !== 1 ? 's' : ''}`;
+      default:
+        return null;
+    }
+  };
+
+  const repetitionLabel = getRepetitionLabel(task);
 
   return (
     <div 
@@ -71,7 +93,7 @@ export function TaskItem({ task }: TaskItemProps) {
           </p>
         )}
         
-        <div className="flex items-center mt-1">
+        <div className="flex items-center mt-1 flex-wrap gap-2">
           <span 
             className={cn(
               "text-xs px-2 py-0.5 rounded-full",
@@ -88,8 +110,16 @@ export function TaskItem({ task }: TaskItemProps) {
           </span>
           
           {task.dueDate && (
-            <span className="ml-2 text-xs text-gray-500">
-              Due: {new Date(task.dueDate).toLocaleDateString()}
+            <span className="text-xs text-gray-500 flex items-center">
+              <Clock size={12} className="mr-1" />
+              Due: {format(new Date(task.dueDate), "MMM d, yyyy")}
+            </span>
+          )}
+          
+          {repetitionLabel && (
+            <span className="text-xs text-purple-600 flex items-center">
+              <RepeatIcon size={12} className="mr-1" />
+              {repetitionLabel}
             </span>
           )}
         </div>

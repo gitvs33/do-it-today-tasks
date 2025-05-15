@@ -1,8 +1,9 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useToast } from "@/components/ui/use-toast";
-import { Task, TaskCategory } from '@/types';
+import { Task, TaskCategory, TaskRepetition } from '@/types';
 import { useAuth } from './AuthContext';
+import { addDays, addMonths, addWeeks, addYears, isAfter } from 'date-fns';
 
 interface TaskContextType {
   tasks: Task[];
@@ -31,7 +32,8 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const tasksWithDates = parsedTasks.map((task: any) => ({
             ...task,
             createdAt: new Date(task.createdAt),
-            dueDate: task.dueDate ? new Date(task.dueDate) : undefined
+            dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
+            lastCompleted: task.lastCompleted ? new Date(task.lastCompleted) : undefined
           }));
           setTasks(tasksWithDates);
         } catch (error) {
@@ -51,11 +53,96 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [tasks, user]);
 
+  // Check for tasks that need to be regenerated based on repetition
+  useEffect(() => {
+    if (!user) return;
+
+    // Get current date at midnight for comparison
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const repeatingTasks = tasks.filter(task => 
+      task.repetition !== 'none' && 
+      task.completed && 
+      task.lastCompleted
+    );
+
+    if (repeatingTasks.length === 0) return;
+
+    const newTasks: Task[] = [];
+    const updatedTasks = [...tasks];
+
+    repeatingTasks.forEach(task => {
+      if (!task.lastCompleted) return;
+
+      let nextDueDate: Date | undefined;
+      
+      // Calculate next due date based on repetition type
+      switch (task.repetition) {
+        case 'daily':
+          nextDueDate = addDays(task.lastCompleted, 1);
+          break;
+        case 'weekly':
+          nextDueDate = addWeeks(task.lastCompleted, 1);
+          break;
+        case 'monthly':
+          nextDueDate = addMonths(task.lastCompleted, 1);
+          break;
+        case 'yearly':
+          nextDueDate = addYears(task.lastCompleted, 1);
+          break;
+        case 'custom':
+          if (task.repeatInterval) {
+            nextDueDate = addDays(task.lastCompleted, task.repeatInterval);
+          }
+          break;
+      }
+
+      // If next due date exists and is today or earlier, create a new task
+      if (nextDueDate && !isAfter(nextDueDate, today)) {
+        // Create new repeated task
+        const repeatedTask: Task = {
+          ...task,
+          id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          completed: false,
+          createdAt: new Date(),
+          dueDate: nextDueDate,
+          lastCompleted: undefined
+        };
+        
+        newTasks.push(repeatedTask);
+        
+        // Remove the completed recurring task
+        const index = updatedTasks.findIndex(t => t.id === task.id);
+        if (index !== -1) {
+          updatedTasks.splice(index, 1);
+        }
+      }
+    });
+
+    if (newTasks.length > 0) {
+      setTasks([...updatedTasks, ...newTasks]);
+      
+      if (newTasks.length === 1) {
+        toast({
+          title: "Recurring task created",
+          description: `"${newTasks[0].title}" has been recreated based on your schedule.`,
+        });
+      } else {
+        toast({
+          title: "Recurring tasks created",
+          description: `${newTasks.length} tasks have been recreated based on your schedules.`,
+        });
+      }
+    }
+  }, [tasks, user, toast]);
+
   const addTask = (taskData: Omit<Task, 'id' | 'createdAt'>) => {
     const newTask: Task = {
       ...taskData,
       id: `task-${Date.now()}`,
       createdAt: new Date(),
+      repetition: taskData.repetition || 'none'
     };
 
     setTasks([...tasks, newTask]);
@@ -78,11 +165,17 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const toggleComplete = (id: string) => {
     setTasks(
-      tasks.map(task => 
-        task.id === id 
-          ? { ...task, completed: !task.completed } 
-          : task
-      )
+      tasks.map(task => {
+        if (task.id === id) {
+          const isNowCompleted = !task.completed;
+          return { 
+            ...task, 
+            completed: isNowCompleted,
+            lastCompleted: isNowCompleted ? new Date() : undefined 
+          };
+        }
+        return task;
+      })
     );
   };
 

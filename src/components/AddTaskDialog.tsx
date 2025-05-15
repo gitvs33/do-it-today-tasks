@@ -7,7 +7,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
-import { TaskCategory } from "@/types";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { TaskCategory, TaskRepetition } from "@/types";
 import { useTasks } from "@/contexts/TaskContext";
 
 interface AddTaskDialogProps {
@@ -20,6 +26,9 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<TaskCategory>("personal");
   const [isImportant, setIsImportant] = useState(false);
+  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+  const [repetition, setRepetition] = useState<TaskRepetition>("none");
+  const [repeatInterval, setRepeatInterval] = useState<number>(1);
   
   const { addTask } = useTasks();
 
@@ -35,26 +44,31 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
       description: description || undefined,
       category,
       completed: false,
-      important: isImportant
+      important: isImportant,
+      dueDate,
+      repetition,
+      repeatInterval: repetition === 'custom' ? repeatInterval : undefined
     });
     
     // Reset form
-    setTitle("");
-    setDescription("");
-    setCategory("personal");
-    setIsImportant(false);
-    
+    resetForm();
     onOpenChange(false);
   };
 
   const handleCancel = () => {
     // Reset form
+    resetForm();
+    onOpenChange(false);
+  };
+
+  const resetForm = () => {
     setTitle("");
     setDescription("");
     setCategory("personal");
     setIsImportant(false);
-    
-    onOpenChange(false);
+    setDueDate(undefined);
+    setRepetition("none");
+    setRepeatInterval(1);
   };
 
   return (
@@ -118,6 +132,67 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
                 </div>
               </RadioGroup>
             </div>
+            
+            <div className="flex flex-col space-y-2">
+              <Label htmlFor="dueDate">Due Date (optional)</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !dueDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dueDate ? format(dueDate, "PPP") : <span>Select a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={dueDate}
+                    onSelect={setDueDate}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="repetition">Repeat</Label>
+              <Select value={repetition} onValueChange={(value) => setRepetition(value as TaskRepetition)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select frequency" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">One time only</SelectItem>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="yearly">Yearly</SelectItem>
+                  <SelectItem value="custom">Custom</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {repetition === 'custom' && (
+              <div className="space-y-2">
+                <Label htmlFor="repeatInterval">Repeat every</Label>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    id="repeatInterval"
+                    type="number"
+                    min={1}
+                    value={repeatInterval}
+                    onChange={(e) => setRepeatInterval(parseInt(e.target.value) || 1)}
+                    className="w-20"
+                  />
+                  <span>days</span>
+                </div>
+              </div>
+            )}
             
             <div className="flex items-center space-x-2">
               <Switch
